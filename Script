@@ -1,0 +1,93 @@
+> setwd("D:/R Learning/Getting and Cleaning Data/Quiz/Data")
+
+> fileURL <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+> download.file(fileURL,destfile="D:/R Learning/Getting and Cleaning Data/Quiz/Data/ProjectData.zip")
+
+> unzip("D:/R Learning/Getting and Cleaning Data/Quiz/Data/ProjectData.zip")
+
+> XtestData <- read.table("D:/R Learning/Getting and Cleaning Data/Quiz/Data/UCI HAR Dataset/test/X_test.txt", header = FALSE, sep ="")
+> YtestData <- read.table("D:/R Learning/Getting and Cleaning Data/Quiz/Data/UCI HAR Dataset/test/y_test.txt", header = FALSE, sep ="")
+> dim(XtestData)
+> dim(YtestData)
+
+> XtrainData <- read.table("D:/R Learning/Getting and Cleaning Data/Quiz/Data/UCI HAR Dataset/train/X_train.txt", header = FALSE, sep ="")
+> YtrainData <- read.table("D:/R Learning/Getting and Cleaning Data/Quiz/Data/UCI HAR Dataset/train/y_train.txt", header = FALSE, sep ="")
+> dim(XtrainData)
+> dim(YtrainData)
+
+> install.packages("data.table")
+> library(data.table)
+
+> XtestData2<- data.table(XtestData)
+> YtestData2 <- data.table(YtestData)
+> YtrainData2 <- data.table(YtrainData)
+> XtrainData2 <- data.table(XtrainData)
+
+
+> XtestDataLabel <- XtestData2[,label:=YtestData2$V1]
+> XtrainDataLabel <- XtrainData2[,label:=YtrainData2$V1]
+> trainData <- XtrainDataLabel[,subject:=trainSubjectData2$V1]
+> trainData <- trainData[,set:="train"]
+> testData <- XtestDataLabel[,subject:=testSubjectData2$V1]
+> testData <- testData[,set:="test"]
+
+> ColName <- colnames(testData)
+> reqData <- merge(testData,trainData, by=ColName, all = TRUE)
+
+
+> features <- read.table("D:/R Learning/Getting and Cleaning Data/Quiz/Data/UCI HAR Dataset/features.txt")
+> reqDataMean <- grep("mean()", features$V2)
+> reqDataStd <- grep("std()", features$V2)
+> reqDataStd[34]=562
+> reqDataStd[35]=563
+> reqDataStd[36]=564
+> reqDataMeanSub <- reqData[,reqDataMean,with=FALSE]
+> reqDataStdSub <- reqData[,reqDataStd,with=FALSE]
+
+> finalData <- cbind(reqDataMeanSub,reqDataStdSub)
+
+> dim(finalData)
+> names(finalData)
+
+> ColNamesActualMean <- grep("mean()", features$V2,value=TRUE)
+> oldnames <- names(finalData)
+> oldnamesMean <- oldnames[1:46]
+> oldnamesStd <- oldnames[47:79]
+> setnames(finalData, oldnamesMean, ColNamesActualMean)
+> ColNamesActualStd <- grep("std()", features$V2,value=TRUE)
+
+
+# renaming the factor variables -- looking for a easier way
+
+> for (i in 1:nrow(finalData)) {
++ if (finalData$label[i] == 5) {
++ finalData$label[i] <- "STANDING"}
++ }
+> for (i in 1:nrow(finalData)) {
++ if (finalData$label[i] == 6) {
++ finalData$label[i] <- "LAYING"}
++ }
+> for (i in 1:nrow(finalData)) {
++ if (finalData$label[i] == 1) {
++ finalData$label[i] <- "WALKING"}
++ }
+> for (i in 1:nrow(finalData)) {
++ if (finalData$label[i] == 2) {
++ finalData$label[i] <- "WALKING_UPSTAIRS"}
++ }
+> for (i in 1:nrow(finalData)) {
++ if (finalData$label[i] == 3) {
++ finalData$label[i] <- "WALKING_DOWNSTAIRS"}
++ }
+> for (i in 1:nrow(finalData)) {
++ if (finalData$label[i] == 4) {
++ finalData$label[i] <- "SITTING"}
++ }
+
+
+> finalData$label <- factor(finalData$label)
+> finalData$subject <- factor(finalData$subject)
+
+
+> tidyfinalData <- group_by(finalData, label, subject)
+> tidyfinalData2 <- summarize(tidyfinalData, means=colMeans(tidyfinalData[,(1:79),with=FALSE], na.rm=TRUE))
